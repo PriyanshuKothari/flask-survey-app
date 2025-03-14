@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Survey Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Doctor Survey Predictor</h2>
+        
+        <!-- Form to Enter Time -->
+        <form id="predict-form">
+            <label for="hour">Enter Time (Hour 0-23):</label>
+            <input type="number" name="hour" id="hour" min="0" max="23" required placeholder="e.g. 10">
+            <button type="submit">Predict</button>
+        </form>
+
+        <!-- Results Section -->
+        <div id="results" style="display:none;">
+            <h3>Predicted Doctors:</h3>
+
+            <!-- Download CSV Button (Now Above the Table) -->
+            <a id="download-btn" href="#" style="display:none;" class="download-button">📥 Download CSV</a>
+
+            <!-- Table for Predictions -->
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th>NPI</th>
+                        <th>Region</th>
+                        <th>Specialty</th>
+                        <th>Survey Attempts</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("predict-form").onsubmit = async function(event) {
+            event.preventDefault();
+            let hour = document.getElementById("hour").value;
+
+            // Fetch predictions from Flask API
+            let response = await fetch("/predict?hour=" + hour);
+            let result = await response.json();
+
+            let tableBody = document.querySelector("#results-table tbody");
+            tableBody.innerHTML = ""; // Clear previous results
+
+            // Handle error or no data case
+            if (result.message) {
+                alert(result.message);
+                document.getElementById("results").style.display = "none";
+                return;
+            }
+
+            // Populate table with results
+            result.data.forEach(doc => {
+                let row = `<tr>
+                    <td>${doc.NPI}</td>
+                    <td>${doc.Region}</td>
+                    <td>${doc.Speciality}</td>
+                    <td>${doc["Count of Survey Attempts"]}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+
+            // Show results section
+            document.getElementById("results").style.display = "block";
+            
+            // Set CSV download link
+            let downloadBtn = document.getElementById("download-btn");
+            downloadBtn.href = result.csv_url;
+            downloadBtn.style.display = "inline-block";
+        };
+    </script>
+</body>
+</html>
